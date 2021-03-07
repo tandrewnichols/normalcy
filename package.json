@@ -4,7 +4,8 @@
   "description": "Schema-based redux store normalization",
   "main": "src/normalcy.js",
   "scripts": {
-    "test": "karma start",
+    "test": "karma start --single-run",
+    "test:watch": "NODE_ENV=development karma start",
     "build": "webpack --mode production",
     "cover": "nyc --reporter=html --reporter=lcov --reporter=text-summary mocha --timeout=3000 --reporter=dot test/**/*.js"
   },
@@ -34,6 +35,8 @@
   "homepage": "https://github.com/tandrewnichols/normalcy#readme",
   "devDependencies": {
     "@babel/core": "^7.13.8",
+    "@babel/plugin-proposal-nullish-coalescing-operator": "^7.13.8",
+    "@babel/plugin-proposal-optional-chaining": "^7.13.8",
     "@babel/preset-env": "^7.13.9",
     "babel-loader": "^8.2.2",
     "babel-polyfill": "^6.26.0",
