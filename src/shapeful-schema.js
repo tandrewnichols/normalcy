@@ -8,7 +8,7 @@ export default class ShapefulSchema extends Schema {
 
   normalizeOne(entity) {
     return {
-      [entity[this.id]]: this.walkShape(this.shape, entity)
+      [this.getId(entity)]: this.walkShape(this.shape, entity)
     };
   }
 
@@ -20,10 +20,10 @@ export default class ShapefulSchema extends Schema {
         let value;
 
         if (val instanceof Schema) {
-          value = this.replaceWithId(subEntity);
+          value = val.replaceWithId(subEntity);
         } else if (Array.isArray(val) && Array.isArray(subEntity)) {
           if (val[0] instanceof Schema) {
-            value = subEntity.map((subEnt) => this.replaceWithId(subEnt));
+            value = subEntity.map((subEnt) => val[0].replaceWithId(subEnt));
           } else {
             value = subEntity.map((subEnt) => this.walkShape(val[0], subEnt));
           }

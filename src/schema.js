@@ -4,14 +4,22 @@ export default class Schema {
     this.id = id;
   }
 
+  getId(entity) {
+    if (typeof this.id === 'function') {
+      return this.id(entity);
+    } else {
+      return entity?.[this.id];
+    }
+  }
+
   keyById(entity) {
     return {
-      [entity[this.id]]: entity
+      [this.getId(entity)]: entity
     };
   }
 
   replaceWithId(entity) {
-    return entity?.[this.id] ?? entity;
+    return this.getId(entity) ?? entity;
   }
 
   normalize(entity) {
