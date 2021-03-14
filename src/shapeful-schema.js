@@ -35,4 +35,28 @@ export default class ShapefulSchema extends Schema {
       }, {})
     };
   }
+
+  findAndNorm(subSchema, entity) {
+    return Array.isArray(entity) ? this.findAndNormAll(subSchema, entity) : this.findAndNormOne(subSchema, entity);
+  }
+
+  findAndNormOne(subSchema, entity) {
+    const recurse = (currentShape, currentEntity) => {
+      for (let [key, val] of Object.entries(currentShape)) {
+        if (val instanceof Schema && val.is(subSchema.name) && currentEntity[key]) {
+          return val.normalize(currentEntity[key]);
+        } else if (val !== null && typeof val === 'object') {
+          return recurse(val, currentEntity[key]);
+        }
+
+        continue;
+      }
+    };
+
+    return recurse(this.shape, entity);
+  }
+
+  findAndNormAll(subSchema, entities) {
+    return entities.reduce((memo, entity) => ({ ...memo, ...this.findAndNormOne(subSchema, entity) }), {});
+  }
 }

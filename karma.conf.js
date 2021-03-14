@@ -1,3 +1,5 @@
+const path = require('path');
+
 module.exports = function(config) {
   config.set({
     frameworks: ['mocha'],
@@ -25,6 +27,12 @@ module.exports = function(config) {
     },
 
     webpack: {
+      resolve: {
+        alias: {
+          src: path.resolve(__dirname, 'src'),
+          test: path.resolve(__dirname, 'test')
+        }
+      },
       module: {
         rules: [
           {
