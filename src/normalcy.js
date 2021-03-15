@@ -31,22 +31,11 @@ export const add = (schema) => {
     };
   };
 
-  reducer.to = (parentSchema) => {
-    const innerReducer = (state, payload) => {
-      return {
-        ...state,
-        ...parentSchema.findAndAdd(state, schema, payload)
-      };
+  reducer.to = (parentSchema, id) => (state, payload) => {
+    return {
+      ...state,
+      ...parentSchema.findAndAdd(state, schema, payload, id)
     };
-
-    innerReducer.by = (id) => (state, payload) => {
-      return {
-        ...state,
-        ...parentSchema.findAndAddById(state, schema, payload, id)
-      };
-    };
-
-    return innerReducer;
   };
 
   return reducer;
@@ -57,16 +46,8 @@ export const remove = (schema) => {
     return schema.remove(state, payload);
   };
 
-  reducer.from = (parentSchema) => {
-    const innerReducer = (state, payload) => {
-      return parentSchema.findAndRemove(state, schema, payload)
-    };
-
-    innerReducer.by = (id) => (state, payload) => {
-      return parentSchema.findAndRemoveById(state, schema, payload, id);
-    };
-
-    return innerReducer;
+  reducer.from = (parentSchema, id) => (state, payload) => {
+    return parentSchema.findAndRemove(state, schema, payload, id)
   };
 
   return reducer;

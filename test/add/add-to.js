@@ -3,136 +3,27 @@ import { scenarios } from 'test/helpers';
 
 export default () => {
   context('add(schema).to(otherSchema)', () => {
-    context('and a key/value pair', () => {
-      context('and the property isn\'t there yet', () => {
-        context('with the default id', () => {
-          const user = schema('user');
-          const post = schema('post', { author: user });
-          const reducer = add(user).to(post);
-          const state = {
-            post1: {
-              id: 'post1',
-              isPost1: true
-            },
-            post2: {
-              id: 'post2',
-              isPost2: true
-            }
-          };
-          const payload = {
-            id: 'post1',
-            author: {
-              id: 'user1',
-              isUser1: true
-            }
-          };
-          const expected = {
-            post1: {
-              id: 'post1',
-              isPost1: true,
-              author: 'user1'
-            },
-            post2: {
-              id: 'post2',
-              isPost2: true
-            }
-          };
-
-          scenarios(
-            'should add the key/value to the entity',
-            'should add multiple key/values to the entity',
-            reducer, state, payload, expected
-          );
-        });
-
-        context('with a string key', () => {
-          const user = schema('user', 'user_id');
-          const post = schema('post', { author: user });
-          const reducer = add(user).to(post);
-          const state = {
-            post1: {
-              id: 'post1',
-              isPost1: true
-            }
-          };
-          const payload = {
-            id: 'post1',
-            author: {
-              user_id: 'user1',
-              isUser1: true
-            }
-          };
-          const expected = {
-            post1: {
-              id: 'post1',
-              isPost1: true,
-              author: 'user1'
-            }
-          };
-
-          scenarios(
-            'should add the key/value to the entity',
-            'should add multiple key/values to the entity',
-            reducer, state, payload, expected
-          );
-        });
-
-        context('with a function that generates a key', () => {
-          const user = schema('user', (entity) => entity.user_id);
-          const post = schema('post', { author: user });
-          const reducer = add(user).to(post);
-          const state = {
-            post1: {
-              id: 'post1',
-              isPost1: true
-            }
-          };
-          const payload = {
-            id: 'post1',
-            author: {
-              user_id: 'user1',
-              isUser1: true
-            }
-          };
-          const expected = {
-            post1: {
-              id: 'post1',
-              isPost1: true,
-              author: 'user1'
-            }
-          };
-
-          scenarios(
-            'should add the key/value to the entity',
-            'should add multiple key/values to the entity',
-            reducer, state, payload, expected
-          );
-        });
-      });
-
-      context('and the property is already there', () => {
+    context('with a key/value pair', () => {
+      context('and a string key', () => {
         const user = schema('user');
         const post = schema('post', { author: user });
-        const reducer = add(user).to(post);
+        const reducer = add(user).to(post, 'post_id');
         const state = {
           post1: {
             id: 'post1',
             isPost1: true,
-            author: 'user2'
+            author: 'user1'
           }
         };
         const payload = {
-          id: 'post1',
-          author: {
-            id: 'user1',
-            isUser1: true
-          }
+          post_id: 'post1',
+          id: 'user2'
         };
         const expected = {
           post1: {
             id: 'post1',
             isPost1: true,
-            author: 'user1'
+            author: 'user2'
           }
         };
 
@@ -142,13 +33,43 @@ export default () => {
           reducer, state, payload, expected
         );
       });
+
+      context('and a function that generates a key', () => {
+        const user = schema('user');
+        const post = schema('post', { author: user });
+        const reducer = add(user).to(post, (entity) => entity.post_id);
+        const state = {
+          post1: {
+            id: 'post1',
+            isPost1: true,
+            author: 'user1'
+          }
+        };
+        const payload = {
+          post_id: 'post1',
+          id: 'user2'
+        };
+        const expected = {
+          post1: {
+            id: 'post1',
+            isPost1: true,
+            author: 'user2'
+          }
+        };
+
+        scenarios(
+          'should add the generated key to the entity',
+          'should add multiple generated keys to the entity',
+          reducer, state, payload, expected
+        );
+      });
     });
 
-    context('and a list of strings', () => {
-      context('and the property isn\'t there yet', () => {
+    context('with a list', () => {
+      context('and the property doesn\'t exist yet', () => {
         const user = schema('user');
         const post = schema('post', { authors: [user] });
-        const reducer = add(user).to(post);
+        const reducer = add(user).to(post, 'post_id');
         const state = {
           post1: {
             id: 'post1',
@@ -156,31 +77,28 @@ export default () => {
           }
         };
         const payload = {
-          id: 'post1',
-          authors: [{
-            id: 'user1',
-            isUser1: true
-          }]
+          post_id: 'post1',
+          id: 'user2'
         };
         const expected = {
           post1: {
             id: 'post1',
             isPost1: true,
-            authors: ['user1']
+            authors: ['user2']
           }
         };
 
         scenarios(
-          'should add string to the list',
-          'should add multiple strings to the list',
+          'should add the item to the list',
+          'should add multiple items to the list',
           reducer, state, payload, expected
         );
       });
 
-      context('and the property is already there', () => {
+      context('and the property exists already', () => {
         const user = schema('user');
         const post = schema('post', { authors: [user] });
-        const reducer = add(user).to(post);
+        const reducer = add(user).to(post, 'post_id');
         const state = {
           post1: {
             id: 'post1',
@@ -189,11 +107,8 @@ export default () => {
           }
         };
         const payload = {
-          id: 'post1',
-          authors: [{
-            id: 'user2',
-            isUser1: true
-          }]
+          post_id: 'post1',
+          id: 'user2'
         };
         const expected = {
           post1: {
@@ -204,48 +119,43 @@ export default () => {
         };
 
         scenarios(
-          'should replace the key/value in the entity',
-          'should replace multiple key/values in the entity',
+          'should add the item to the list',
+          'should add multiple items to the list',
           reducer, state, payload, expected
         );
       });
     });
 
-    context('and a nested shape', () => {
+    context('with nested entities', () => {
       const user = schema('user');
-      const post = schema('post', { meta: { authors: [user] }});
-      const reducer = add(user).to(post);
+      const post = schema('post', { meta: { author: [user] }});
+      const reducer = add(user).to(post, 'post_id');
       const state = {
         post1: {
           id: 'post1',
           isPost1: true,
           meta: {
-            authors: ['user1']
+            author: ['user1']
           }
         }
       };
       const payload = {
-        id: 'post1',
-        meta: {
-          authors: [{
-            id: 'user2',
-            isUser2: true
-          }]
-        }
+        post_id: 'post1',
+        id: 'user2'
       };
       const expected = {
         post1: {
           id: 'post1',
           isPost1: true,
           meta: {
-            authors: ['user1', 'user2']
+            author: ['user1', 'user2']
           }
         }
       };
 
       scenarios(
-        'should add the string to the list',
-        'should add multiple strings to the list',
+        'should add the entityt to the list',
+        'should add multiple entities to the list',
         reducer, state, payload, expected
       );
     });
