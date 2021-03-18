@@ -43,9 +43,17 @@ export default class ShapefulSchema extends Schema {
   findAndNormOne(subSchema, entity) {
     const recurse = (currentShape, currentEntity) => {
       for (let [key, val] of Object.entries(currentShape)) {
-        if (val instanceof Schema && val.is(subSchema.name) && currentEntity[key]) {
-          return val.normalize(currentEntity[key]);
-        } else if (val !== null && typeof val === 'object') {
+        if (val instanceof Schema) {
+          if (val.is(subSchema.name) && currentEntity[key]) {
+            return val.normalize(currentEntity[key]);
+          }
+
+          if (currentEntity[key]) {
+            return recurse(val.shape, currentEntity[key]);
+          }
+        }
+
+        if (val !== null && typeof val === 'object') {
           return recurse(val, currentEntity[key]);
         }
 

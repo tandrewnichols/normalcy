@@ -16,11 +16,11 @@ export const schema = (name, shape, id) => {
   }
 };
 
-export const add = (schema) => {
+export const add = (schema, reducerId) => {
   const reducer = (state, payload) => {
     return {
       ...state,
-      ...schema.normalize(payload)
+      ...schema.normalize(payload, reducerId)
     };
   };
 
@@ -31,26 +31,34 @@ export const add = (schema) => {
     };
   };
 
-  reducer.to = (parentSchema, id) => (state, payload) => {
+  reducer.to = (parentSchema, id, disambiguation) => (state, payload) => {
     return {
       ...state,
-      ...parentSchema.findAndAdd(state, schema, payload, id)
+      ...parentSchema.findAndAdd(payload, state, schema, id, reducerId, disambiguation)
     };
   };
 
   return reducer;
 };
 
-export const remove = (schema) => {
+export const remove = (schema, reducerId) => {
   const reducer = (state, payload) => {
-    return schema.remove(state, payload);
+    return schema.remove(state, payload, reducerId);
   };
 
-  reducer.from = (parentSchema, id) => (state, payload) => {
-    return parentSchema.findAndRemove(state, schema, payload, id)
+  reducer.from = (parentSchema, id, disambiguation) => (state, payload) => {
+    return parentSchema.findAndRemove(payload, state, schema, id, reducerId, disambiguation)
   };
 
   return reducer;
+};
+
+export const merge = (schema) => (state, payload) => {
+  return schema.merge(state, payload);
+};
+
+export const compose = (...reducers) => (state, payload) => {
+  return reducers.reduce((memo, reducer) => reducer(memo, payload), state);
 };
 
 export default { schema, add };

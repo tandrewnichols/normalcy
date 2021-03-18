@@ -63,6 +63,36 @@ export default () => {
           reducer, state, payload, expected
         );
       });
+
+      context('with a reducer id', () => {
+        const user = schema('user');
+        const post = schema('post', { author: user });
+        const reducer = add(user, 'user_id').to(post, 'post_id');
+        const state = {
+          post1: {
+            id: 'post1',
+            isPost1: true,
+            author: 'user1'
+          }
+        };
+        const payload = {
+          post_id: 'post1',
+          user_id: 'user2'
+        };
+        const expected = {
+          post1: {
+            id: 'post1',
+            isPost1: true,
+            author: 'user2'
+          }
+        };
+
+        scenarios(
+          'should add the key/value to the entity',
+          'should add multiple key/values to the entity',
+          reducer, state, payload, expected
+        );
+      });
     });
 
     context('with a list', () => {
@@ -121,6 +151,232 @@ export default () => {
         scenarios(
           'should add the item to the list',
           'should add multiple items to the list',
+          reducer, state, payload, expected
+        );
+      });
+
+      context('with a reducer id', () => {
+        const user = schema('user');
+        const post = schema('post', { authors: [user] });
+        const reducer = add(user, 'user_id').to(post, 'post_id');
+        const state = {
+          post1: {
+            id: 'post1',
+            isPost1: true,
+            authors: ['user1']
+          }
+        };
+        const payload = {
+          post_id: 'post1',
+          user_id: 'user2'
+        };
+        const expected = {
+          post1: {
+            id: 'post1',
+            isPost1: true,
+            authors: ['user1', 'user2']
+          }
+        };
+
+        scenarios(
+          'should add the key/value to the entity',
+          'should add multiple key/values to the entity',
+          reducer, state, payload, expected
+        );
+      });
+    });
+
+    context('with multiple sub-schemas of the same type', () => {
+      context('with a single-segment string', () => {
+        const user = schema('user');
+        const post = schema('post', { authors: [user], editors: [user] });
+        const reducer = add(user, 'user_id').to(post, 'post_id', 'editors');
+        const state = {
+          post1: {
+            id: 'post1',
+            isPost1: true,
+            authors: ['user1'],
+            editors: ['user2']
+          }
+        };
+        const payload = {
+          post_id: 'post1',
+          user_id: 'user3'
+        };
+        const expected = {
+          post1: {
+            id: 'post1',
+            isPost1: true,
+            authors: ['user1'],
+            editors: ['user2', 'user3']
+          }
+        };
+
+        scenarios(
+          'should add the key/value to the correct entity',
+          'should add multiple key/values to the correct entity',
+          reducer, state, payload, expected
+        );
+      });      
+
+      context('with a multi-segment string', () => {
+        const user = schema('user');
+        const post = schema('post', { creator: { author: user }, editor: { author: user }});
+        const reducer = add(user, 'user_id').to(post, 'post_id', 'editor.author');
+        const state = {
+          post1: {
+            id: 'post1',
+            isPost1: true,
+            creator: {
+              author: 'user1'
+            },
+            editor: {
+              author: 'user2'
+            }
+          }
+        };
+        const payload = {
+          post_id: 'post1',
+          user_id: 'user3'
+        };
+        const expected = {
+          post1: {
+            id: 'post1',
+            isPost1: true,
+            creator: {
+              author: 'user1'
+            },
+            editor: {
+              author: 'user3'
+            }
+          }
+        };
+
+        scenarios(
+          'should add the key/value to the correct entity',
+          'should add multiple key/values to the correct entity',
+          reducer, state, payload, expected
+        );
+      });      
+
+      context('with an array', () => {
+        const user = schema('user');
+        const post = schema('post', { creator: { author: user }, editor: { author: user }});
+        const reducer = add(user, 'user_id').to(post, 'post_id', ['editor', 'author']);
+        const state = {
+          post1: {
+            id: 'post1',
+            isPost1: true,
+            creator: {
+              author: 'user1'
+            },
+            editor: {
+              author: 'user2'
+            }
+          }
+        };
+        const payload = {
+          post_id: 'post1',
+          user_id: 'user3'
+        };
+        const expected = {
+          post1: {
+            id: 'post1',
+            isPost1: true,
+            creator: {
+              author: 'user1'
+            },
+            editor: {
+              author: 'user3'
+            }
+          }
+        };
+
+        scenarios(
+          'should add the key/value to the correct entity',
+          'should add multiple key/values to the correct entity',
+          reducer, state, payload, expected
+        );
+      });
+
+      context('with a function returning a multi-segment string', () => {
+        const user = schema('user');
+        const post = schema('post', { creator: { author: user }, editor: { author: user }});
+        const reducer = add(user, 'user_id').to(post, 'post_id', (entity) => `${ entity.type }.author`);
+        const state = {
+          post1: {
+            id: 'post1',
+            isPost1: true,
+            creator: {
+              author: 'user1'
+            },
+            editor: {
+              author: 'user2'
+            }
+          }
+        };
+        const payload = {
+          post_id: 'post1',
+          user_id: 'user3',
+          type: 'editor'
+        };
+        const expected = {
+          post1: {
+            id: 'post1',
+            isPost1: true,
+            creator: {
+              author: 'user1'
+            },
+            editor: {
+              author: 'user3'
+            }
+          }
+        };
+
+        scenarios(
+          'should add the key/value to the correct entity',
+          'should add multiple key/values to the correct entity',
+          reducer, state, payload, expected
+        );
+      });
+
+      context('with a function returning an array', () => {
+        const user = schema('user');
+        const post = schema('post', { creator: { author: user }, editor: { author: user }});
+        const reducer = add(user, 'user_id').to(post, 'post_id', (entity) => [entity.type, 'author']);
+        const state = {
+          post1: {
+            id: 'post1',
+            isPost1: true,
+            creator: {
+              author: 'user1'
+            },
+            editor: {
+              author: 'user2'
+            }
+          }
+        };
+        const payload = {
+          post_id: 'post1',
+          user_id: 'user3',
+          type: 'editor'
+        };
+        const expected = {
+          post1: {
+            id: 'post1',
+            isPost1: true,
+            creator: {
+              author: 'user1'
+            },
+            editor: {
+              author: 'user3'
+            }
+          }
+        };
+
+        scenarios(
+          'should add the key/value to the correct entity',
+          'should add multiple key/values to the correct entity',
           reducer, state, payload, expected
         );
       });

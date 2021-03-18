@@ -10,15 +10,29 @@ export default class Schema {
     return name === this.name; 
   }
 
-  getId(entity) {
+  getId(entity, altId) {
+    if (altId) {
+      return entity?.[altId];
+    }
+
     if (typeof this.id === 'function') {
       return this.id(entity);
-    } else {
-      return entity?.[this.id];
     }
+
+    return entity?.[this.id];
   }
 
-  keyById(entity) {
+  keyById(entity, reducerId) {
+    if (reducerId) {
+      const { [reducerId]: id, ...ent } = entity;
+      return {
+        [entity[reducerId]]: {
+          [this.id]: id,
+          ...ent
+        }
+      };
+    }
+
     return {
       [this.getId(entity)]: entity
     };
@@ -28,34 +42,60 @@ export default class Schema {
     return this.getId(entity) ?? entity;
   }
 
-  normalize(entity) {
-    return isArr(entity) ? this.normalizeAll(entity) : this.normalizeOne(entity);
+  normalize(entity, reducerId) {
+    return isArr(entity) ? this.normalizeAll(entity, reducerId) : this.normalizeOne(entity, reducerId);
   }
 
-  normalizeOne(entity) {
-    return this.keyById(entity);
+  normalizeOne(entity, reducerId) {
+    return this.keyById(entity, reducerId);
   }
 
-  normalizeAll(entities) {
-    return entities.reduce((memo, entity) => ({ ...memo, ...this.normalizeOne(entity) }), {});
+  normalizeAll(entities, reducerId) {
+    return entities.reduce((memo, entity) => ({ ...memo, ...this.normalizeOne(entity, reducerId) }), {});
   }
 
-  reduceEntities(state, subSchema, entities, fn, id) {
-    return entities.reduce((memo, entity) => ({ ...memo, ...fn(state, subSchema, entity, id) }), {});
+  reduceEntities(entities, fn, ...rest) {
+    return entities.reduce((memo, entity) => ({ ...memo, ...fn(entity, ...rest) }), {});
   }
 
-  findAndAdd(state, subSchema, entity, id) {
+  normalizeDisambiguation(entity, disambiguation) {
+    if (typeof disambiguation === 'function') {
+      disambiguation = disambiguation(entity);
+    }
+
+    if (typeof disambiguation === 'string') {
+      return disambiguation.split('.');
+    }
+
+    if (Array.isArray(disambiguation)) {
+      return [...disambiguation];
+    }
+
+    return [];
+  }
+
+  findAndAdd(entity, ...rest) {
     const fn = isArr(entity) ? 'findAndAddAll' : 'findAndAddOne';
-    return this[fn](state, subSchema, entity, id);
+    return this[fn](entity, ...rest);
   }
 
-  findAndAddOne(state, subSchema, entity, id) {
+  findAndAddOne(entity, state, subSchema, id, reducerId, disambiguation) {
+    disambiguation = this.normalizeDisambiguation(entity, disambiguation);
+
     const recurse = (currentState, currentShape, currentEntity) => {
       for (let [key, val] of Object.entries(currentShape)) {
+        if (disambiguation.length) {
+          if (disambiguation[0] !== key) {
+            continue;
+          }
+
+          disambiguation.shift();
+        }
+
         if (val instanceof Schema && val.is(subSchema.name)) {
           return {
             ...currentState,
-            [key]: val.getId(currentEntity)
+            [key]: val.getId(currentEntity, reducerId)
           };
         }
 
@@ -63,13 +103,13 @@ export default class Schema {
           if (!currentState[key]) {
             return {
               ...currentState,
-              [key]: [ val[0].getId(currentEntity) ]
+              [key]: [ val[0].getId(currentEntity, reducerId) ]
             };
           }
 
           return {
             ...currentState,
-            [key]: [ ...currentState[key], val[0].getId(currentEntity) ]
+            [key]: [ ...currentState[key], val[0].getId(currentEntity, reducerId) ]
           };
         }
 
@@ -90,39 +130,49 @@ export default class Schema {
     };
   }
 
-  findAndAddAll(state, subSchema, entities, id) {
-    return this.reduceEntities(state, subSchema, entities, this.findAndAddOne.bind(this), id);
+  findAndAddAll(entities, ...rest) {
+    return this.reduceEntities(entities, this.findAndAddOne.bind(this), ...rest);
   }
 
-  remove(state, entity) {
+  remove(state, entity, reducerId) {
     const fn = isArr(entity) ? 'removeAll' : 'removeOne';
-    return this[fn](state, entity);
+    return this[fn](state, entity, reducerId);
   }
 
-  removeOne(state, entity) {
-    const { [this.getId(entity)]: removed, ...newState } = state;
+  removeOne(state, entity, reducerId) {
+    const { [this.getId(entity, reducerId)]: removed, ...newState } = state;
     return { ...newState };
   }
 
-  removeAll(state, entities) {
-    return entities.reduce((memo, entity) => this.removeOne(memo, entity), state);
+  removeAll(state, entities, reducerId) {
+    return entities.reduce((memo, entity) => this.removeOne(memo, entity, reducerId), state);
   }
 
-  findAndRemove(state, subSchema, entity, id) {
+  findAndRemove(entity, ...rest) {
     const fn = isArr(entity) ? 'findAndRemoveAll' : 'findAndRemoveOne';
-    return this[fn](state, subSchema, entity, id);
+    return this[fn](entity, ...rest);
   }
 
-  findAndRemoveOne(state, subSchema, entity, id) {
+  findAndRemoveOne(entity, state, subSchema, id, reducerId, disambiguation) {
+    disambiguation = this.normalizeDisambiguation(entity, disambiguation);
+
     const recurse = (currentState, currentShape, currentEntity) => {
       for (let [key, val] of Object.entries(currentShape)) {
-        if (val instanceof Schema && val.is(subSchema.name) && currentState[key] === val.getId(currentEntity)) {
+        if (disambiguation.length) {
+          if (disambiguation[0] !== key) {
+            continue;
+          }
+
+          disambiguation.shift();
+        }
+
+        if (val instanceof Schema && val.is(subSchema.name) && currentState[key] === val.getId(currentEntity, reducerId)) {
           const { [key]: removed, ...newState } = currentState;
           return { ...newState };
         }
 
         if (isArr(val) && isArr(currentState[key]) && val[0] instanceof Schema && val[0].is(subSchema.name)) {
-          const id = val[0].getId(currentEntity);
+          const id = val[0].getId(currentEntity, reducerId);
 
           return {
             ...currentState,
@@ -149,7 +199,26 @@ export default class Schema {
     };
   }
 
-  findAndRemoveAll(state, subSchema, entities, id) {
-    return this.reduceEntities(state, subSchema, entities, this.findAndRemoveOne.bind(this), id);
+  findAndRemoveAll(entities, ...rest) {
+    return this.reduceEntities(entities, this.findAndRemoveOne.bind(this), ...rest);
+  }
+
+  merge(state, entity) {
+    return isArr(entity) ? this.mergeAll(state, entity) : this.mergeOne(state, entity);
+  }
+
+  mergeOne(state, entity) {
+    const id = this.getId(entity);
+    return {
+      ...state,
+      [id]: {
+        ...state[id],
+        ...entity
+      }
+    };
+  }
+
+  mergeAll(state, entities) {
+    return entities.reduce((memo, entity) => ({ ...memo, ...this.mergeOne(state, entity) }), {});
   }
 }

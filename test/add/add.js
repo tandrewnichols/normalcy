@@ -96,6 +96,70 @@ export default () => {
           reducer, state, payload, expected
         );
       });
+
+      context('and the particular reducer uses a different (string) key', () => {
+        context('with the default id', () => {
+          const user = schema('user');
+          const reducer = add(user, 'user_id');
+          const state = {
+            user1: {
+              id: 'user1',
+              isUser1: true,
+            }
+          };
+          const payload = {
+            user_id: 'user2',
+            isUser2: true
+          };
+          const expected = {
+            user1: {
+              id: 'user1',
+              isUser1: true
+            },
+            user2: {
+              id: 'user2',
+              isUser2: true
+            }
+          };
+
+          scenarios(
+            'should key the entity by reducer id and replace that id in the entity',
+            'should key multiple entities by reducer id and replace that id in the entity',
+            reducer, state, payload, expected
+          );
+        });
+
+        context('with a string key', () => {
+          const user = schema('user', 'user_id');
+          const reducer = add(user, 'user');
+          const state = {
+            user1: {
+              user_id: 'user1',
+              isUser1: true,
+            }
+          };
+          const payload = {
+            user: 'user2',
+            isUser2: true
+          };
+          const expected = {
+            user1: {
+              user_id: 'user1',
+              isUser1: true
+            },
+            user2: {
+              user_id: 'user2',
+              isUser2: true
+            }
+          };
+
+          scenarios(
+            'should key the entity by reducer id and replace that id in the entity',
+            'should key multiple entities by reducer id and replace that id in the entity',
+            reducer, state, payload, expected
+          );
+        });
+      });
     });
 
     context('and the schema has sub-schemas', () => {
