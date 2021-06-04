@@ -1,4 +1,3 @@
-import ShapefulSchema from './shapeful-schema';
 import Schema from './schema';
 
 export const schema = (name, shape, id) => {
@@ -9,37 +8,70 @@ export const schema = (name, shape, id) => {
 
   id ||= 'id';
 
-  if (shape) {
-    return new ShapefulSchema(name, id, shape);
-  } else {
-    return new Schema(name, id);
-  }
+  return new Schema(name, id, shape);
 };
 
-export const add = (schema, reducerId) => {
+export const add = (schema) => {
+  const args = { schema };
+
   const reducer = (state, payload) => {
     return {
       ...state,
-      ...schema.normalize(payload, reducerId)
+      ...schema.normalize(payload)
     };
   };
 
-  reducer.from = (parentSchema) => (state, payload) => {
-    return {
-      ...state,
-      ...parentSchema.findAndNorm(schema, payload)
-    };
+  reducer.by = (schemaProp) => {
+    if (args.parentSchema) {
+      args.parentProp = prop;
+    } else {
+      args.schemaProp = prop;
+    }
+
+    return this;
   };
 
-  reducer.to = (parentSchema, id, disambiguation) => (state, payload) => {
-    return {
-      ...state,
-      ...parentSchema.findAndAdd(payload, state, schema, id, reducerId, disambiguation)
-    };
+  reducer.from = (parentSchema) => {
+    args.parentSchema = parentSchema;
+    return this;
+  };
+
+  reducer.to = (parentSchema) => {
+    args.parentSchema = parentSchema;
+    return this;
+  };
+
+  reducer.on = (disambiguation) => {
+    args.disambiguation = disambiguation;
+    return this;
   };
 
   return reducer;
 };
+// export const add = (schema, reducerId) => {
+//   const reducer = (state, payload) => {
+//     return {
+//       ...state,
+//       ...schema.normalize(payload, reducerId)
+//     };
+//   };
+//
+//   reducer.from = (parentSchema) => (state, payload) => {
+//     return {
+//       ...state,
+//       ...parentSchema.findAndNorm(schema, payload)
+//     };
+//   };
+//
+//   reducer.to = (parentSchema, id, disambiguation) => (state, payload) => {
+//     return {
+//       ...state,
+//       ...parentSchema.findAndAdd(payload, state, schema, id, reducerId, disambiguation)
+//     };
+//   };
+//
+//   return reducer;
+// };
 
 export const remove = (schema, reducerId) => {
   const reducer = (state, payload) => {
